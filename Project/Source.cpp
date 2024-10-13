@@ -1,24 +1,37 @@
 #include <GL/glew.h>
-#include <GL/freeglut.h> 
+#include <GL/freeglut.h>
 
-// Drawing routine.
+float rotationX = 0.0;
+float rotationY = 0.0;
+
 void drawScene(void)
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
+    // model view
+    glLoadIdentity();
+
+    // cam pos
+    gluLookAt(5.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+
+    // rotate
+    glRotatef(rotationX, 1.0, 0.0, 0.0);
+    glRotatef(rotationY, 0.0, 1.0, 0.0);
+
+    // draw
     glBegin(GL_LINES);
 
-    // X tengely (piros)
+    // X
     glColor3f(1.0, 0.0, 0.0);
     glVertex3f(0.0, 0.0, 0.0);
     glVertex3f(3.0, 0.0, 0.0);
 
-    // Y tengely (zöld)
+    // Y
     glColor3f(0.0, 1.0, 0.0);
     glVertex3f(0.0, 0.0, 0.0);
     glVertex3f(0.0, 3.0, 0.0);
 
-    // Z tengely (kék)
+    // Z
     glColor3f(0.0, 0.0, 1.0);
     glVertex3f(0.0, 0.0, 0.0);
     glVertex3f(0.0, 0.0, 3.0);
@@ -28,13 +41,12 @@ void drawScene(void)
     glFlush();
 }
 
-// Initialization routine.
+// init
 void setup(void)
 {
     glClearColor(1.0, 1.0, 1.0, 0.0);
 }
 
-// OpenGL window reshape routine.
 void resize(int w, int h)
 {
     glViewport(0, 0, w, h);
@@ -44,16 +56,29 @@ void resize(int w, int h)
     gluPerspective(45.0, (float)w / (float)h, 1.0, 100.0);
 
     glMatrixMode(GL_MODELVIEW);
-    glLoadIdentity();
-    gluLookAt(3.0, 3.0, 3.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
 }
 
-
-void keyInput(unsigned char key, int x, int y)
+void specialInput(int key, int x, int y)
 {
+    float angleStep = 5.0;
+    switch (key)
+    {
+        case GLUT_KEY_RIGHT:
+            rotationY += angleStep;
+            break;
+        case GLUT_KEY_LEFT:
+            rotationY -= angleStep;
+            break;
+        case GLUT_KEY_UP:
+            rotationX -= angleStep;
+            break;
+        case GLUT_KEY_DOWN:
+            rotationX += angleStep;
+            break;
+    }
+    glutPostRedisplay(); // display again
 }
 
-// Main routine.
 int main(int argc, char** argv)
 {
     glutInit(&argc, argv);
@@ -66,11 +91,11 @@ int main(int argc, char** argv)
     glutInitWindowSize(800, 600);
     glutInitWindowPosition(100, 100);
 
-    glutCreateWindow("3D Koordináta Rendszer");
+    glutCreateWindow("Surface Modelling");
 
     glutDisplayFunc(drawScene);
     glutReshapeFunc(resize);
-    glutKeyboardFunc(keyInput);
+    glutSpecialFunc(specialInput); // Nyílbillentyûk kezeléséhez.
 
     glewExperimental = GL_TRUE;
     glewInit();
