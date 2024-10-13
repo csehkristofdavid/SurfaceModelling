@@ -1,0 +1,11 @@
+# Minden fájl kizárása
+*
+
+# .gitignore engedélyezése
+!/.gitignore
+
+# .gitignore engedélyezése
+!/.txt
+
+# Csak .cpp fájlok engedélyezése
+!*.cpp
