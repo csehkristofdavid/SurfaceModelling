@@ -6,6 +6,8 @@ float rotationX = 0.0;
 float rotationY = 0.0;
 float rotationZ = 0.0;
 int selectedPoint[2] = { -1, -1 }; // A kiválasztott pont indexei (-1, -1, ha nincs kiválasztva)
+bool showBezierSurface = false; // Induláskor a Bézier-felület nincs kirajzolva
+
 
 // 4x4-es kontrollpontok vízszintes felülethez (X-Z síkban)
 GLfloat ctrlPoints[4][4][3] = {
@@ -95,48 +97,61 @@ float bernstein(int i, int n, float t) {
     return binomialCoeff * pow(t, i) * pow(1 - t, n - i);
 }
 
-// Bézier-felület pontjának kiszámítása
-void bezierSurface() {
+void drawBezierSurfaceWithLines() {
     int numDivisions = 20; // Felület felbontása
     float step = 1.0f / (float)(numDivisions - 1);
 
-    glColor3f(0.7f, 0.9f, 1.0f); // Világos kék szín
+    glColor3f(0.5f, 0.5f, 0.5f); // Világos kék szín
 
-    for (int i = 0; i < numDivisions - 1; ++i) {
-        float u1 = i * step;
-        float u2 = (i + 1) * step;
+    // Vízszintes vonalak rajzolása (u paraméter mentén)
+    for (int i = 0; i < numDivisions; ++i) {
+        float u = i * step;
 
-        glBegin(GL_TRIANGLE_STRIP);
+        glBegin(GL_LINE_STRIP);
         for (int j = 0; j < numDivisions; ++j) {
             float v = j * step;
-
-            // Bézier-felület pont kiszámítása u1 és u2 esetén
-            GLfloat point1[3] = { 0.0f, 0.0f, 0.0f };
-            GLfloat point2[3] = { 0.0f, 0.0f, 0.0f };
+            GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
 
             for (int k = 0; k < 4; ++k) {
                 for (int l = 0; l < 4; ++l) {
-                    float bU1 = bernstein(k, 3, u1);
-                    float bV1 = bernstein(l, 3, v);
-                    point1[0] += ctrlPoints[k][l][0] * bU1 * bV1;
-                    point1[1] += ctrlPoints[k][l][1] * bU1 * bV1;
-                    point1[2] += ctrlPoints[k][l][2] * bU1 * bV1;
-
-                    float bU2 = bernstein(k, 3, u2);
-                    float bV2 = bernstein(l, 3, v);
-                    point2[0] += ctrlPoints[k][l][0] * bU2 * bV2;
-                    point2[1] += ctrlPoints[k][l][1] * bU2 * bV2;
-                    point2[2] += ctrlPoints[k][l][2] * bU2 * bV2;
+                    float bU = bernstein(k, 3, u);
+                    float bV = bernstein(l, 3, v);
+                    point[0] += ctrlPoints[k][l][0] * bU * bV;
+                    point[1] += ctrlPoints[k][l][1] * bU * bV;
+                    point[2] += ctrlPoints[k][l][2] * bU * bV;
                 }
             }
 
-            // Az aktuális pontok kirajzolása a háromszögcsíkon
-            glVertex3fv(point1);
-            glVertex3fv(point2);
+            glVertex3fv(point);
+        }
+        glEnd();
+    }
+
+    // Függőleges vonalak rajzolása (v paraméter mentén)
+    for (int j = 0; j < numDivisions; ++j) {
+        float v = j * step;
+
+        glBegin(GL_LINE_STRIP);
+        for (int i = 0; i < numDivisions; ++i) {
+            float u = i * step;
+            GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
+
+            for (int k = 0; k < 4; ++k) {
+                for (int l = 0; l < 4; ++l) {
+                    float bU = bernstein(k, 3, u);
+                    float bV = bernstein(l, 3, v);
+                    point[0] += ctrlPoints[k][l][0] * bU * bV;
+                    point[1] += ctrlPoints[k][l][1] * bU * bV;
+                    point[2] += ctrlPoints[k][l][2] * bU * bV;
+                }
+            }
+
+            glVertex3fv(point);
         }
         glEnd();
     }
 }
+
 
 
 
@@ -171,7 +186,10 @@ void drawScene(void)
     // Kontrollpontok és vonalak rajzolása
     drawControlPoints();
     drawControlLines();
-    bezierSurface();
+
+    if (showBezierSurface) {
+        drawBezierSurfaceWithLines(); // Bézier-felület kirajzolása
+    }
 
     glFlush();
 }
@@ -263,6 +281,9 @@ void keyboardInput(unsigned char key, int x, int y)
         break;
     case 'Z': // Nagy Z -> Z tengely körüli forgatás pozitívan
         rotationZ += angleStep;
+        break;
+    case 'b': // 'b' billentyű -> Bézier-felület ki/be kapcsolása
+        showBezierSurface = !showBezierSurface;
         break;
     }
     glutPostRedisplay();
