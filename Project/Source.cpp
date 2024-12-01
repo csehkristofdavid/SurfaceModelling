@@ -10,10 +10,11 @@ int selectedPoint[2] = { -1, -1 }; // A kiválasztott pont indexei (-1, -1, ha n
 // 4x4-es kontrollpontok vízszintes felülethez (X-Z síkban)
 GLfloat ctrlPoints[4][4][3] = {
     { {-1.5, 0.0, -1.5}, {-0.5, 0.0, -1.5}, {0.5, 0.0, -1.5}, {1.5, 0.0, -1.5} },
-    { {-1.5, 0.0, -0.5}, {-0.5, 0.0, -0.5}, {0.5, 0.0, -0.5}, {1.5, 0.0, -0.5} },
-    { {-1.5, 0.0, 0.5}, {-0.5, 0.0, 0.5}, {0.5, 0.0, 0.5}, {1.5, 0.0, 0.5} },
+    { {-1.5, 0.0, -0.5}, {-0.5, 0.5, -0.5}, {0.5, 0.5, -0.5}, {1.5, 0.0, -0.5} },
+    { {-1.5, 0.0, 0.5}, {-0.5, 0.5, 0.5}, {0.5, 0.5, 0.5}, {1.5, 0.0, 0.5} },
     { {-1.5, 0.0, 1.5}, {-0.5, 0.0, 1.5}, {0.5, 0.0, 1.5}, {1.5, 0.0, 1.5} }
 };
+
 
 void drawCircle(GLfloat x, GLfloat y, GLfloat z, GLfloat radius)
 {
@@ -76,6 +77,69 @@ void drawControlLines()
     }
 }
 
+// Faktoriális függvény
+int factorial(int n) {
+    int result = 1;
+    for (int i = 2; i <= n; ++i) {
+        result *= i;
+    }
+    return result;
+}
+
+// Bernstein polinom kiszámítása
+float bernstein(int i, int n, float t) {
+    float binomialCoeff = 1.0;
+    for (int j = 1; j <= i; ++j) {
+        binomialCoeff *= (n - j + 1) / (float)j;
+    }
+    return binomialCoeff * pow(t, i) * pow(1 - t, n - i);
+}
+
+// Bézier-felület pontjának kiszámítása
+void bezierSurface() {
+    int numDivisions = 20; // Felület felbontása
+    float step = 1.0f / (float)(numDivisions - 1);
+
+    glColor3f(0.7f, 0.9f, 1.0f); // Világos kék szín
+
+    for (int i = 0; i < numDivisions - 1; ++i) {
+        float u1 = i * step;
+        float u2 = (i + 1) * step;
+
+        glBegin(GL_TRIANGLE_STRIP);
+        for (int j = 0; j < numDivisions; ++j) {
+            float v = j * step;
+
+            // Bézier-felület pont kiszámítása u1 és u2 esetén
+            GLfloat point1[3] = { 0.0f, 0.0f, 0.0f };
+            GLfloat point2[3] = { 0.0f, 0.0f, 0.0f };
+
+            for (int k = 0; k < 4; ++k) {
+                for (int l = 0; l < 4; ++l) {
+                    float bU1 = bernstein(k, 3, u1);
+                    float bV1 = bernstein(l, 3, v);
+                    point1[0] += ctrlPoints[k][l][0] * bU1 * bV1;
+                    point1[1] += ctrlPoints[k][l][1] * bU1 * bV1;
+                    point1[2] += ctrlPoints[k][l][2] * bU1 * bV1;
+
+                    float bU2 = bernstein(k, 3, u2);
+                    float bV2 = bernstein(l, 3, v);
+                    point2[0] += ctrlPoints[k][l][0] * bU2 * bV2;
+                    point2[1] += ctrlPoints[k][l][1] * bU2 * bV2;
+                    point2[2] += ctrlPoints[k][l][2] * bU2 * bV2;
+                }
+            }
+
+            // Az aktuális pontok kirajzolása a háromszögcsíkon
+            glVertex3fv(point1);
+            glVertex3fv(point2);
+        }
+        glEnd();
+    }
+}
+
+
+
 void drawScene(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -107,6 +171,7 @@ void drawScene(void)
     // Kontrollpontok és vonalak rajzolása
     drawControlPoints();
     drawControlLines();
+    bezierSurface();
 
     glFlush();
 }

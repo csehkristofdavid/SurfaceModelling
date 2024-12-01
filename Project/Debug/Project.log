@@ -1,7 +1,8 @@
 ﻿  Source.cpp
-C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(37,91): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
-C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(47,67): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
-C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(138,26): warning C4244: 'initializing': conversion from 'GLdouble' to 'float', possible loss of data
-C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(139,26): warning C4244: 'initializing': conversion from 'GLdouble' to 'float', possible loss of data
-C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(140,26): warning C4244: 'initializing': conversion from 'GLdouble' to 'float', possible loss of data
+C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(39,91): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(49,67): warning C4305: 'argument': truncation from 'double' to 'GLfloat'
+C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(95,38): warning C4244: 'return': conversion from 'double' to 'float', possible loss of data
+C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(205,26): warning C4244: 'initializing': conversion from 'GLdouble' to 'float', possible loss of data
+C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(206,26): warning C4244: 'initializing': conversion from 'GLdouble' to 'float', possible loss of data
+C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Source.cpp(207,26): warning C4244: 'initializing': conversion from 'GLdouble' to 'float', possible loss of data
   Project.vcxproj -> C:\Users\Kristóf\Desktop\geo\SurfaceModelling\Project\Debug\Project.exe
