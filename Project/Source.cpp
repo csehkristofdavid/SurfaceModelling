@@ -6,8 +6,6 @@ float rotationX = 0.0;
 float rotationY = 0.0;
 float rotationZ = 0.0;
 int selectedPoint[2] = { -1, -1 }; // A kiválasztott pont indexei (-1, -1, ha nincs kiválasztva)
-bool showBezierSurface = false; // Induláskor a Bézier-felület nincs kirajzolva
-
 
 // 4x4-es kontrollpontok vízszintes felülethez (X-Z síkban)
 GLfloat ctrlPoints[4][4][3] = {
@@ -186,10 +184,7 @@ void drawScene(void)
     // Kontrollpontok és vonalak rajzolása
     drawControlPoints();
     drawControlLines();
-
-    if (showBezierSurface) {
-        drawBezierSurfaceWithLines(); // Bézier-felület kirajzolása
-    }
+    drawBezierSurfaceWithLines();
 
     glFlush();
 }
@@ -281,9 +276,6 @@ void keyboardInput(unsigned char key, int x, int y)
         break;
     case 'Z': // Nagy Z -> Z tengely körüli forgatás pozitívan
         rotationZ += angleStep;
-        break;
-    case 'b': // 'b' billentyű -> Bézier-felület ki/be kapcsolása
-        showBezierSurface = !showBezierSurface;
         break;
     }
     glutPostRedisplay();
