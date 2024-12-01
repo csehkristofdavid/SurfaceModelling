@@ -4,6 +4,7 @@
 
 float rotationX = 0.0;
 float rotationY = 0.0;
+float rotationZ = 0.0;
 int selectedPoint[2] = { -1, -1 }; // A kiválasztott pont indexei (-1, -1, ha nincs kiválasztva)
 
 // 4x4-es kontrollpontok vízszintes felülethez (X-Z síkban)
@@ -88,6 +89,7 @@ void drawScene(void)
     // Rotate
     glRotatef(rotationX, 1.0, 0.0, 0.0);
     glRotatef(rotationY, 0.0, 1.0, 0.0);
+    glRotatef(rotationZ, 0.0, 0.0, 1.0);
 
     // Draw axes
     glBegin(GL_LINES);
@@ -174,26 +176,33 @@ void resize(int w, int h)
     glMatrixMode(GL_MODELVIEW);
 }
 
-void specialInput(int key, int x, int y)
+void keyboardInput(unsigned char key, int x, int y)
 {
     float angleStep = 5.0;
     switch (key)
     {
-    case GLUT_KEY_RIGHT:
-        rotationY += angleStep;
-        break;
-    case GLUT_KEY_LEFT:
-        rotationY -= angleStep;
-        break;
-    case GLUT_KEY_UP:
+    case 'x': // Kis x -> X tengely körüli forgatás negatívan
         rotationX -= angleStep;
         break;
-    case GLUT_KEY_DOWN:
+    case 'X': // Nagy X -> X tengely körüli forgatás pozitívan
         rotationX += angleStep;
+        break;
+    case 'y': // Kis y -> Y tengely körüli forgatás negatívan
+        rotationY -= angleStep;
+        break;
+    case 'Y': // Nagy Y -> Y tengely körüli forgatás pozitívan
+        rotationY += angleStep;
+        break;
+    case 'z': // Kis z -> Z tengely körüli forgatás negatívan
+        rotationZ -= angleStep;
+        break;
+    case 'Z': // Nagy Z -> Z tengely körüli forgatás pozitívan
+        rotationZ += angleStep;
         break;
     }
     glutPostRedisplay();
 }
+
 
 int main(int argc, char** argv)
 {
@@ -207,7 +216,7 @@ int main(int argc, char** argv)
 
     glutDisplayFunc(drawScene);
     glutReshapeFunc(resize);
-    glutSpecialFunc(specialInput);
+    glutKeyboardFunc(keyboardInput);
     glutMouseFunc(mouseFunc);
 
     glewExperimental = GL_TRUE;
