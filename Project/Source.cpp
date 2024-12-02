@@ -1,11 +1,16 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 #include <cmath>
+#include <vector>
 
 float rotationX = 0.0;
 float rotationY = 0.0;
 float rotationZ = 0.0;
 int selectedPoint[2] = { -1, -1 }; // A kiválasztott pont indexei (-1, -1, ha nincs kiválasztva)
+bool showBezierSurface = false; // Induláskor a Bézier-felület nincs kirajzolva
+bool showBSplineSurface = false;
+bool showNURBSSurface = false;
+
 
 // 4x4-es kontrollpontok vízszintes felülethez (X-Z síkban)
 GLfloat ctrlPoints[4][4][3] = {
@@ -149,7 +154,188 @@ void drawBezierSurfaceWithLines() {
         glEnd();
     }
 }
+// B-spline alaptényező (kiszámítja a B-spline alaptényezőt a megadott paraméterekkel)
+float bsplineBasis(int i, int k, float t, const std::vector<float>& knots) {
+    if (k == 0) {
+        return (knots[i] <= t && t < knots[i + 1]) ? 1.0f : 0.0f;
+    }
+    else {
+        float coeff1 = 0.0f;
+        float coeff2 = 0.0f;
 
+        if (knots[i + k] != knots[i]) {
+            coeff1 = (t - knots[i]) / (knots[i + k] - knots[i]) * bsplineBasis(i, k - 1, t, knots);
+        }
+        if (knots[i + k + 1] != knots[i + 1]) {
+            coeff2 = (knots[i + k + 1] - t) / (knots[i + k + 1] - knots[i + 1]) * bsplineBasis(i + 1, k - 1, t, knots);
+        }
+
+        return coeff1 + coeff2;
+    }
+}
+
+void drawBSplineSurfaceWithLines() {
+    int numDivisions = 20; // Felület felbontása
+    float step = 1.0f / (float)(numDivisions - 1);
+
+    // 4x4-es kontrollpont hálóhoz megfelelő csomóponti vektor
+    std::vector<float> knots = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f };
+
+    glColor3f(0.5f, 0.5f, 0.5f); // Szín beállítása
+
+    // Vízszintes vonalak rajzolása (u paraméter mentén)
+    for (int i = 0; i < numDivisions; ++i) {
+        float u = i * step;
+
+        glBegin(GL_LINE_STRIP);
+        for (int j = 0; j < numDivisions; ++j) {
+            float v = j * step;
+            GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
+
+            for (int m = 0; m < 4; ++m) { // Kontrollpontok u irányban
+                for (int n = 0; n < 4; ++n) { // Kontrollpontok v irányban
+                    float bU = bsplineBasis(m, 3, u, knots); // Bspline alaptényező u-ra
+                    float bV = bsplineBasis(n, 3, v, knots); // Bspline alaptényező v-re
+                    point[0] += ctrlPoints[m][n][0] * bU * bV;
+                    point[1] += ctrlPoints[m][n][1] * bU * bV;
+                    point[2] += ctrlPoints[m][n][2] * bU * bV;
+                }
+            }
+
+            glVertex3fv(point);
+        }
+        glEnd();
+    }
+
+    // Függőleges vonalak rajzolása (v paraméter mentén)
+    for (int j = 0; j < numDivisions; ++j) {
+        float v = j * step;
+
+        glBegin(GL_LINE_STRIP);
+        for (int i = 0; i < numDivisions; ++i) {
+            float u = i * step;
+            GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
+
+            for (int m = 0; m < 4; ++m) { // Kontrollpontok u irányban
+                for (int n = 0; n < 4; ++n) { // Kontrollpontok v irányban
+                    float bU = bsplineBasis(m, 3, u, knots); // Bspline alaptényező u-ra
+                    float bV = bsplineBasis(n, 3, v, knots); // Bspline alaptényező v-re
+                    point[0] += ctrlPoints[m][n][0] * bU * bV;
+                    point[1] += ctrlPoints[m][n][1] * bU * bV;
+                    point[2] += ctrlPoints[m][n][2] * bU * bV;
+                }
+            }
+
+            glVertex3fv(point);
+        }
+        glEnd();
+    }
+}
+
+
+// Súlyok a kontrollpontokhoz
+GLfloat weights[4][4] = {
+    {1.0, 1.0, 1.0, 1.0},
+    {1.0, 2.0, 2.0, 1.0},
+    {1.0, 2.0, 2.0, 1.0},
+    {1.0, 1.0, 1.0, 1.0}
+};
+
+// NURBS alaptényező (kiszámítja a NURBS alaptényezőt a megadott paraméterekkel)
+float nurbsBasis(int i, int k, float t, std::vector<float>& knots) {
+    if (k == 0) {
+        return (knots[i] <= t && t < knots[i + 1]) ? 1.0f : 0.0f;
+    }
+    else {
+        float coeff1 = 0.0f;
+        float coeff2 = 0.0f;
+
+        if (knots[i + k] != knots[i]) {
+            coeff1 = (t - knots[i]) / (knots[i + k] - knots[i]) * nurbsBasis(i, k - 1, t, knots);
+        }
+        if (knots[i + k + 1] != knots[i + 1]) {
+            coeff2 = (knots[i + k + 1] - t) / (knots[i + k + 1] - knots[i + 1]) * nurbsBasis(i + 1, k - 1, t, knots);
+        }
+
+        return coeff1 + coeff2;
+    }
+}
+
+void drawNURBSSurface() {
+    int numDivisions = 20; // Felület felbontása
+    float step = 1.0f / (float)(numDivisions - 1);
+
+    // Csomóponti vektor (példa: 4-es fokú NURBS esetén)
+    std::vector<float> knots = { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f };
+
+    glColor3f(0.5f, 0.5f, 0.5f); // Szín beállítása
+
+    // Vízszintes vonalak rajzolása (u paraméter mentén)
+    for (int i = 0; i < numDivisions; ++i) {
+        float u = i * step;
+
+        glBegin(GL_LINE_STRIP);
+        for (int j = 0; j < numDivisions; ++j) {
+            float v = j * step;
+            GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
+            float sumWeights = 0.0f;
+
+            for (int m = 0; m < 4; ++m) {
+                for (int n = 0; n < 4; ++n) {
+                    float bU = nurbsBasis(m, 3, u, knots);
+                    float bV = nurbsBasis(n, 3, v, knots);
+                    float weight = weights[m][n];
+                    sumWeights += weight * bU * bV;
+                    point[0] += ctrlPoints[m][n][0] * weight * bU * bV;
+                    point[1] += ctrlPoints[m][n][1] * weight * bU * bV;
+                    point[2] += ctrlPoints[m][n][2] * weight * bU * bV;
+                }
+            }
+
+            if (sumWeights > 0.0f) {
+                point[0] /= sumWeights;
+                point[1] /= sumWeights;
+                point[2] /= sumWeights;
+            }
+
+            glVertex3fv(point);
+        }
+        glEnd();
+    }
+
+    // Függőleges vonalak rajzolása (v paraméter mentén)
+    for (int j = 0; j < numDivisions; ++j) {
+        float v = j * step;
+
+        glBegin(GL_LINE_STRIP);
+        for (int i = 0; i < numDivisions; ++i) {
+            float u = i * step;
+            GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
+            float sumWeights = 0.0f;
+
+            for (int m = 0; m < 4; ++m) {
+                for (int n = 0; n < 4; ++n) {
+                    float bU = nurbsBasis(m, 3, u, knots);
+                    float bV = nurbsBasis(n, 3, v, knots);
+                    float weight = weights[m][n];
+                    sumWeights += weight * bU * bV;
+                    point[0] += ctrlPoints[m][n][0] * weight * bU * bV;
+                    point[1] += ctrlPoints[m][n][1] * weight * bU * bV;
+                    point[2] += ctrlPoints[m][n][2] * weight * bU * bV;
+                }
+            }
+
+            if (sumWeights > 0.0f) {
+                point[0] /= sumWeights;
+                point[1] /= sumWeights;
+                point[2] /= sumWeights;
+            }
+
+            glVertex3fv(point);
+        }
+        glEnd();
+    }
+}
 
 
 
@@ -184,7 +370,19 @@ void drawScene(void)
     // Kontrollpontok és vonalak rajzolása
     drawControlPoints();
     drawControlLines();
-    drawBezierSurfaceWithLines();
+    
+    if (showBezierSurface) {
+        drawBezierSurfaceWithLines(); // Bézier-felület kirajzolása
+    }
+
+    if (showBSplineSurface) {
+        drawBSplineSurfaceWithLines();
+    }
+
+    if (showNURBSSurface) {
+        drawNURBSSurface();
+    }
+    
 
     glFlush();
 }
@@ -276,6 +474,15 @@ void keyboardInput(unsigned char key, int x, int y)
         break;
     case 'Z': // Nagy Z -> Z tengely körüli forgatás pozitívan
         rotationZ += angleStep;
+        break;
+    case 'b': // 'b' billentyű -> Bézier-felület ki/be kapcsolása
+        showBezierSurface = !showBezierSurface;
+        break;
+    case 's': // B-spline felület kapcsoló
+        showBSplineSurface = !showBSplineSurface;
+        break;
+    case 'n': // 'n' billentyű -> NURBS-felület ki/be kapcsolása
+        showNURBSSurface = !showNURBSSurface;
         break;
     }
     glutPostRedisplay();
