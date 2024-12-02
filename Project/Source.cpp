@@ -341,7 +341,6 @@ void drawNURBSSurface() {
 }
 
 
-
 void drawScene(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -350,7 +349,13 @@ void drawScene(void)
     glLoadIdentity();
 
     // Cam pos
-    gluLookAt(5.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+   // gluLookAt(5.0, 5.0, 5.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+
+    // Kamera pozíció frissítése zoom értékkel
+    float cameraDistance = 5.0f * zoom;
+    gluLookAt(cameraDistance, cameraDistance, cameraDistance,
+        0.0, 0.0, 0.0,
+        0.0, 1.0, 0.0);
 
     // Rotate
     glRotatef(rotationX, 1.0, 0.0, 0.0);
@@ -390,31 +395,18 @@ void drawScene(void)
     glFlush();
 }
 
-// Kamera beállítások
 void setupCamera() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
-    gluPerspective(45.0f * zoom, (float)windowWidth / windowHeight, 0.1f, 100.0f);
+
+    // Perspektíva frissítése
+    gluPerspective(45.0f, (float)windowWidth / windowHeight, 0.1f, 100.0f);
+
     glMatrixMode(GL_MODELVIEW);
     glLoadIdentity();
-    gluLookAt(0.0f, 0.0f, 5.0f,   // Kamera pozíciója
-        0.0f, 0.0f, 0.0f,   // Nézési pont
-        0.0f, 1.0f, 0.0f);  // Felfelé mutató vektor
 }
 
-// Egérgörgő eseménykezelése
-void mouseWheel(int button, int dir, int x, int y) {
-    if (dir > 0) {
-        zoom -= 0.05f; // Közelebb zoomolás
-        if (zoom < 0.5f) zoom = 0.5f; // Minimális zoom
-    }
-    else {
-        zoom += 0.05f; // Távolítás
-        if (zoom > 2.0f) zoom = 2.0f; // Maximális zoom
-    }
-    setupCamera();
-    glutPostRedisplay(); // Újrarajzolás
-}
+
 
 // Egérkattintás kezelése
 void mouseFunc(int button, int state, int x, int y)
@@ -513,7 +505,32 @@ void keyboardInput(unsigned char key, int x, int y)
     case 'n': // 'n' billentyű -> NURBS-felület ki/be kapcsolása
         showNURBSSurface = !showNURBSSurface;
         break;
+    case '1': // Mozgás pozitív x irányba
+        ctrlPoints[selectedPoint[0]][selectedPoint[1]][0] += 0.1f;
+        break;
+    case '2': // Mozgás negatív x irányba
+        ctrlPoints[selectedPoint[0]][selectedPoint[1]][0] -= 0.1f;
+        break;
+    case '3': // Mozgás pozitív y irányba
+        ctrlPoints[selectedPoint[0]][selectedPoint[1]][1] += 0.1f;
+        break;
+    case '4': // Mozgás negatív y irányba
+        ctrlPoints[selectedPoint[0]][selectedPoint[1]][1] -= 0.1f;
+        break;
+    case '5': // Mozgás pozitív z irányba
+        ctrlPoints[selectedPoint[0]][selectedPoint[1]][2] += 0.1f;
+        break;
+    case '6': // Mozgás negatív z irányba
+        ctrlPoints[selectedPoint[0]][selectedPoint[1]][2] -= 0.1f;
+        break;
+    case '+':  // Ha a '+' jelet nyomjuk meg
+        zoom = std::min(zoom + 0.05f, 2.0f); // Növeljük a zoomot
+        break;
+    case '-':  // Ha a '-' jelet nyomjuk meg
+        zoom = std::max(zoom - 0.05f, 0.5f); // Csökkentjük a zoomot
+        break;
     }
+    setupCamera();
     glutPostRedisplay();
 }
 
@@ -532,13 +549,14 @@ int main(int argc, char** argv)
     glutReshapeFunc(resize);
     glutKeyboardFunc(keyboardInput);
     glutMouseFunc(mouseFunc);
-    glutMouseWheelFunc(mouseWheel);
+    setupCamera();
+    //glutMouseWheelFunc(mouseWheel);
 
     glewExperimental = GL_TRUE;
     glewInit();
 
     setup();
-    glutMouseFunc(mouseWheel);
+    //glutMouseFunc(mouseWheel);
 
     glutMainLoop();
 }
