@@ -2,6 +2,7 @@
 #include <GL/freeglut.h>
 #include <cmath>
 #include <vector>
+#include <iostream>
 
 float rotationX = 0.0;
 float rotationY = 0.0;
@@ -10,6 +11,9 @@ int selectedPoint[2] = { -1, -1 }; // A kiválasztott pont indexei (-1, -1, ha n
 bool showBezierSurface = false; // Induláskor a Bézier-felület nincs kirajzolva
 bool showBSplineSurface = false;
 bool showNURBSSurface = false;
+float zoom = 1.0f;
+int windowWidth = 800;
+int windowHeight = 600;
 
 
 // 4x4-es kontrollpontok vízszintes felülethez (X-Z síkban)
@@ -154,23 +158,22 @@ void drawBezierSurfaceWithLines() {
         glEnd();
     }
 }
-// B-spline alaptényező (kiszámítja a B-spline alaptényezőt a megadott paraméterekkel)
 float bsplineBasis(int i, int k, float t, const std::vector<float>& knots) {
+    // B-spline alaptényező kiszámítása a Cox-de Boor képlettel
     if (k == 0) {
         return (knots[i] <= t && t < knots[i + 1]) ? 1.0f : 0.0f;
     }
     else {
-        float coeff1 = 0.0f;
-        float coeff2 = 0.0f;
+        float denom1 = knots[i + k] - knots[i];
+        float denom2 = knots[i + k + 1] - knots[i + 1];
 
-        if (knots[i + k] != knots[i]) {
-            coeff1 = (t - knots[i]) / (knots[i + k] - knots[i]) * bsplineBasis(i, k - 1, t, knots);
-        }
-        if (knots[i + k + 1] != knots[i + 1]) {
-            coeff2 = (knots[i + k + 1] - t) / (knots[i + k + 1] - knots[i + 1]) * bsplineBasis(i + 1, k - 1, t, knots);
-        }
+        // Első tag számítása (recurszív)
+        float term1 = (denom1 != 0) ? ((t - knots[i]) / denom1) * bsplineBasis(i, k - 1, t, knots) : 0.0f;
 
-        return coeff1 + coeff2;
+        // Második tag számítása (recurszív)
+        float term2 = (denom2 != 0) ? ((knots[i + k + 1] - t) / denom2) * bsplineBasis(i + 1, k - 1, t, knots) : 0.0f;
+
+        return term1 + term2;
     }
 }
 
@@ -179,7 +182,7 @@ void drawBSplineSurfaceWithLines() {
     float step = 1.0f / (float)(numDivisions - 1);
 
     // 4x4-es kontrollpont hálóhoz megfelelő csomóponti vektor
-    std::vector<float> knots = { 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f };
+    std::vector<float> knots = { 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f };
 
     glColor3f(0.5f, 0.5f, 0.5f); // Szín beállítása
 
@@ -188,7 +191,7 @@ void drawBSplineSurfaceWithLines() {
         float u = i * step;
 
         glBegin(GL_LINE_STRIP);
-        for (int j = 0; j < numDivisions; ++j) {
+        for (int j = 0; j < numDivisions-1; ++j) {
             float v = j * step;
             GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
 
@@ -212,7 +215,7 @@ void drawBSplineSurfaceWithLines() {
         float v = j * step;
 
         glBegin(GL_LINE_STRIP);
-        for (int i = 0; i < numDivisions; ++i) {
+        for (int i = 0; i < numDivisions-1; ++i) {
             float u = i * step;
             GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
 
@@ -275,7 +278,7 @@ void drawNURBSSurface() {
         float u = i * step;
 
         glBegin(GL_LINE_STRIP);
-        for (int j = 0; j < numDivisions; ++j) {
+        for (int j = 0; j < numDivisions-1; ++j) {
             float v = j * step;
             GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
             float sumWeights = 0.0f;
@@ -308,7 +311,7 @@ void drawNURBSSurface() {
         float v = j * step;
 
         glBegin(GL_LINE_STRIP);
-        for (int i = 0; i < numDivisions; ++i) {
+        for (int i = 0; i < numDivisions-1; ++i) {
             float u = i * step;
             GLfloat point[3] = { 0.0f, 0.0f, 0.0f };
             float sumWeights = 0.0f;
@@ -385,6 +388,32 @@ void drawScene(void)
     
 
     glFlush();
+}
+
+// Kamera beállítások
+void setupCamera() {
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluPerspective(45.0f * zoom, (float)windowWidth / windowHeight, 0.1f, 100.0f);
+    glMatrixMode(GL_MODELVIEW);
+    glLoadIdentity();
+    gluLookAt(0.0f, 0.0f, 5.0f,   // Kamera pozíciója
+        0.0f, 0.0f, 0.0f,   // Nézési pont
+        0.0f, 1.0f, 0.0f);  // Felfelé mutató vektor
+}
+
+// Egérgörgő eseménykezelése
+void mouseWheel(int button, int dir, int x, int y) {
+    if (dir > 0) {
+        zoom -= 0.05f; // Közelebb zoomolás
+        if (zoom < 0.5f) zoom = 0.5f; // Minimális zoom
+    }
+    else {
+        zoom += 0.05f; // Távolítás
+        if (zoom > 2.0f) zoom = 2.0f; // Maximális zoom
+    }
+    setupCamera();
+    glutPostRedisplay(); // Újrarajzolás
 }
 
 // Egérkattintás kezelése
@@ -495,7 +524,7 @@ int main(int argc, char** argv)
     glutInitContextVersion(4, 3);
     glutInitContextProfile(GLUT_COMPATIBILITY_PROFILE);
     glutInitDisplayMode(GLUT_SINGLE | GLUT_RGBA | GLUT_DEPTH);
-    glutInitWindowSize(800, 600);
+    glutInitWindowSize(windowWidth, windowHeight);
     glutInitWindowPosition(100, 100);
     glutCreateWindow("Surface Modelling");
 
@@ -503,11 +532,13 @@ int main(int argc, char** argv)
     glutReshapeFunc(resize);
     glutKeyboardFunc(keyboardInput);
     glutMouseFunc(mouseFunc);
+    glutMouseWheelFunc(mouseWheel);
 
     glewExperimental = GL_TRUE;
     glewInit();
 
     setup();
+    glutMouseFunc(mouseWheel);
 
     glutMainLoop();
 }
